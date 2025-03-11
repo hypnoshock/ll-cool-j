@@ -19,26 +19,27 @@ function App() {
       return;
     }
 
-    const nextLetter = () => {
-      const nextIdx = currentLetterIdx + 1;
-      if (nextIdx < speechTxt.length) {
-        setCurrentLetterIdx(nextIdx);
-      } else {
-        video.pause();
-      }
-    };
-
     const video = videoRef.current;
+
+    if (currentLetterIdx >= speechTxt.length) {
+      video.pause();
+      video.currentTime = 0;
+      return;
+    }
+
     const letter = speechTxt[currentLetterIdx].toLowerCase();
     const letterTiming = alphabetTimings[letter];
 
     if (!letterTiming) {
-      nextLetter();
+      setCurrentLetterIdx((prevIdx) => prevIdx + 1);
       return;
     }
 
     // Set video time
     video.currentTime = letterTiming.time;
+    videoRef.current.play();
+
+    // pump Cool J
     if (letter !== " ") {
       gsap.fromTo(
         video,
@@ -58,7 +59,7 @@ function App() {
     let animationFrameId: number;
     const checkTime = () => {
       if (video.currentTime >= letterTiming.time + letterTiming.duration) {
-        nextLetter();
+        setCurrentLetterIdx((prevIdx) => prevIdx + 1);
       } else {
         animationFrameId = requestAnimationFrame(checkTime);
       }
@@ -68,17 +69,25 @@ function App() {
 
     return () => {
       cancelAnimationFrame(animationFrameId);
+      video.pause();
     };
   }, [speechTxt, currentLetterIdx]);
 
-  const playSpeech = useCallback(() => {
+  const onPlayBtn = useCallback(() => {
     if (!videoRef.current) {
       return;
     }
     setSpeechTxt(inputTxt);
     setCurrentLetterIdx(0);
-    videoRef.current.currentTime = 0;
-    videoRef.current.play();
+
+    if (inputTxt.length === 0) {
+      videoRef.current.pause();
+      return;
+    }
+
+    const letter = inputTxt[0].toLowerCase();
+    const letterTiming = alphabetTimings[letter];
+    videoRef.current.currentTime = letterTiming?.time || 0;
   }, [inputTxt]);
 
   const onTextChange = useCallback(() => {
@@ -92,7 +101,7 @@ function App() {
         <video className="ll-cool-j" ref={videoRef} src="ll-cool-j.mp4" />
       </div>
       <input ref={inputRef} value={inputTxt} onChange={onTextChange} />
-      <button onClick={playSpeech}>Say it Cool J!</button>
+      <button onClick={onPlayBtn}>Say it Cool J!</button>
     </div>
   );
 }
