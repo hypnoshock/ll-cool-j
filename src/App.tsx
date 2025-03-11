@@ -5,7 +5,9 @@ import "./App.css";
 function App() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const [speechTxt, setSpeechTxt] = useState<string>("llcoolj");
+  const [inputTxt, setInputTxt] = useState<string>("llcoolj");
+  const [speechTxt, setSpeechTxt] = useState<string>("");
+  const [currentLetterIdx, setCurrentLetterIdx] = useState<number>(0);
 
   useEffect(() => {
     if (!videoRef.current) {
@@ -15,9 +17,23 @@ function App() {
       return;
     }
 
+    const nextLetter = () => {
+      const nextIdx = currentLetterIdx + 1;
+      if (nextIdx < speechTxt.length) {
+        setCurrentLetterIdx(nextIdx);
+      } else {
+        video.pause();
+      }
+    };
+
     const video = videoRef.current;
-    const letter = speechTxt[0].toLowerCase();
+    const letter = speechTxt[currentLetterIdx].toLowerCase();
     const letterTiming = alphabetTimings[letter];
+
+    if (!letterTiming) {
+      nextLetter();
+      return;
+    }
 
     video.currentTime = letterTiming.time;
 
@@ -25,13 +41,7 @@ function App() {
 
     const checkTime = () => {
       if (video.currentTime >= letterTiming.time + letterTiming.duration) {
-        console.log(
-          `pausing at ${video.currentTime}. expecting: ${
-            letterTiming.time + letterTiming.duration
-          } letterTiming: ${JSON.stringify(letterTiming)}`
-        );
-        video.pause();
-        // cancelAnimationFrame(animationFrameId);
+        nextLetter();
       } else {
         animationFrameId = requestAnimationFrame(checkTime);
       }
@@ -42,25 +52,28 @@ function App() {
     return () => {
       cancelAnimationFrame(animationFrameId);
     };
-  }, [speechTxt]);
+  }, [speechTxt, currentLetterIdx]);
 
   const playSpeech = useCallback(() => {
     if (!videoRef.current) {
       return;
     }
+    setSpeechTxt(inputTxt);
+    setCurrentLetterIdx(0);
+    videoRef.current.currentTime = 0;
     videoRef.current.play();
-  }, []);
+  }, [inputTxt]);
 
   const onTextChange = useCallback(() => {
     const text = inputRef.current?.value || "";
-    setSpeechTxt(text);
+    setInputTxt(text);
   }, []);
 
   return (
     <div style={{ display: "flex", flexDirection: "column" }}>
       <video ref={videoRef} src="ll-cool-j.mp4" />
-      <input ref={inputRef} value={speechTxt} onChange={onTextChange} />
-      <button onClick={playSpeech}>Play Speech</button>
+      <input ref={inputRef} value={inputTxt} onChange={onTextChange} />
+      <button onClick={playSpeech}>Say it Cool J!</button>
     </div>
   );
 }
