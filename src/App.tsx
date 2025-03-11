@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { alphabetTimings } from "./alphabet-timings";
+import gsap from "gsap";
+import { useGSAP } from "@gsap/react";
 import "./App.css";
 
 function App() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const [inputTxt, setInputTxt] = useState<string>("llcoolj");
+  const [inputTxt, setInputTxt] = useState<string>("super sharp shooter");
   const [speechTxt, setSpeechTxt] = useState<string>("");
   const [currentLetterIdx, setCurrentLetterIdx] = useState<number>(0);
 
@@ -35,10 +37,25 @@ function App() {
       return;
     }
 
+    // Set video time
     video.currentTime = letterTiming.time;
+    if (letter !== " ") {
+      gsap.fromTo(
+        video,
+        {
+          scale: 1,
+        },
+        {
+          scale: 1.1,
+          duration: letterTiming.duration * 0.5,
+          repeat: 1,
+          yoyo: true,
+          ease: "power1.inOut",
+        }
+      );
+    }
 
     let animationFrameId: number;
-
     const checkTime = () => {
       if (video.currentTime >= letterTiming.time + letterTiming.duration) {
         nextLetter();
@@ -71,7 +88,9 @@ function App() {
 
   return (
     <div style={{ display: "flex", flexDirection: "column" }}>
-      <video ref={videoRef} src="ll-cool-j.mp4" />
+      <div className="video-container">
+        <video className="ll-cool-j" ref={videoRef} src="ll-cool-j.mp4" />
+      </div>
       <input ref={inputRef} value={inputTxt} onChange={onTextChange} />
       <button onClick={playSpeech}>Say it Cool J!</button>
     </div>
